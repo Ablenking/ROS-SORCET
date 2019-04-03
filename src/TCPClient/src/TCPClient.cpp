@@ -11,8 +11,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "TCPClient");
     ros::NodeHandle client_NodeHandle("~");
 
-    int sock_fd;
-    char Data_[]="Hi,TCP ,this is 127.0.0.1";
+    int sock_fd,connect_fd=-3;
+    std::string tcp_message = "Hi,TCP ,this is 127.0.0.1";
 
     struct sockaddr_in addr_serv;
 
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-                    ROS_INFO("test handle 2");
+    ROS_INFO("test handle 2");
 
    // addr_serv.addr_serv="127.0.0.1";
     addr_serv.sin_family = AF_INET;
@@ -33,25 +33,19 @@ int main(int argc, char **argv)
     addr_serv.sin_addr.s_addr = inet_addr("127.0.0.1");//server ip
 
     ros::Rate loop_rate(0.1);
-                    ROS_INFO("test handle 3");
+    memset(&addr_serv.sin_zero, 0, sizeof(addr_serv.sin_zero));//memory apply ps:we can ignore it
+
+    ROS_INFO("test handle 3");
     while(ros::ok())
     {
-        memset(&addr_serv.sin_zero, 0, sizeof(addr_serv.sin_zero));//memory apply
-        if( -1 == connect(sock_fd,(struct sockaddr *)&addr_serv ,sizeof(struct sockaddr) )) //try to connet
-        //    connect(sock_fd, (struct sockaddr*)&addr_serv, sizeof(struct sockaddr)) 
-        {
+        if(connect_fd < 0)
+            connect_fd = connect(sock_fd,(struct sockaddr *)&addr_serv ,sizeof(addr_serv) );
+        if( connect_fd == -1) //try to connet if connet fail last time
             ROS_INFO("ROS Erro MSG:TCP connect err");
-            ROS_INFO("close socket...");
-            close(sock_fd);//close conneting
-        }
-        else{
+        else
+        {
             ROS_INFO("TCP connet success!");
-            while(ros::ok)
-            {
-                if( 0 < send(sock_fd,Data_,sizeof(Data_),0) );//send data
-                    ROS_INFO("data send success!");
-                loop_rate.sleep();
-            }
+            write(sock_fd, tcp_message.c_str(), tcp_message.length()) ;
         }
         loop_rate.sleep();// try to connect sever
     }
